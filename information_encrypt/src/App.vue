@@ -9,7 +9,7 @@
             <b-form-input class="mb-5 r-input" type="email" v-model="email" required
               autocomplete="current-email"></b-form-input>
             <label for="input-live" class="r-text-inter">Contraseña</label>
-            <b-form-input class="mb-3 r-input" type="password" v-model="password" minlength="8" maxlength="15" required
+            <b-form-input class="mb-3 r-input" type="password" v-model="password" minlength="8" maxlength="16" required
               autocomplete="current-password"></b-form-input>
             <div class="text-center mb-5">
               <b-button variant="success" type="submit" class="mb-2 r-button w-50">Registrar</b-button>
@@ -40,35 +40,41 @@ export default {
     }
   },
   methods: {
+    encrypt(dato) {
+      const clave = CryptoJS.enc.Utf8.parse('625C1EF65A21FDF6625C1EF65A21FDF6');
+      const cifrado = CryptoJS.AES.encrypt(dato, clave, {
+        mode: CryptoJS.mode.ECB,
+        padding: CryptoJS.pad.Pkcs7,
+      });
+
+      return cifrado.toString();
+    },  
+
     async onRegister(event) {
       event.preventDefault();
       const emailRegex = /^(?=.*[@])(?=.*(gmail\.com))[\S]+$/;
-      const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$/;
 
       if (!this.email || !emailRegex.test(this.email)) {
         console.error("Correo electrónico no válido. Solo se permiten Gmail");
         return;
       }
 
-      if (!this.password || !passRegex.test(this.password)) {
-        console.error("La contraseña debe contener al menos una letra mayúscula, una letra minúscula, un número y un caracter especial.");
+      if (!this.password) {
         return;
       }
       const sanitizedEmail = this.email.trim();
       const sanitizedPassword = this.password.trim();
-      
-      const secretKey = 'claveSecreta12345';
-
-      const encryptedEmail = CryptoJS.AES.encrypt(sanitizedEmail, secretKey).toString();
-      const encryptedPassword = CryptoJS.AES.encrypt(sanitizedPassword, secretKey).toString();
+      const emailSend = this.encrypt(sanitizedEmail);
+      const passwordSend = this.encrypt(sanitizedPassword);
 
       try {
-        const message = await registerServices.register(encryptedEmail, encryptedPassword);
+        const message = await registerServices.register(emailSend,passwordSend);
         console.log(message);
       } catch (error) {
         console.error(error);
       }
     }
+   
   }
 
 }
