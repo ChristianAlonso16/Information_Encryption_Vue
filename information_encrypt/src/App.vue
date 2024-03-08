@@ -1,27 +1,47 @@
 <template>
   <b-container class="w-75 mt-5">
+    <b-alert :show="showError" variant="warning">{{ message }}</b-alert>
+
     <b-row class="border border-1 rounded-4 r-container">
       <b-col class="text-start p-5">
         <b-container>
           <b-form @submit="onRegister" v-if="show">
             <h3 class="mt-4 mb-5 text-center">Registrar cuenta</h3>
             <label for="" class="r-text-inter">Correo electronico</label>
-            <b-form-input class="mb-5 r-input" type="email" v-model="email" required
-              autocomplete="current-email"></b-form-input>
+            <b-form-input
+              class="mb-5 r-input"
+              type="email"
+              v-model="email"
+              required
+              autocomplete="current-email"
+            ></b-form-input>
             <label for="input-live" class="r-text-inter">Contraseña</label>
-            <b-form-input class="mb-3 r-input" type="password" v-model="password" minlength="8" maxlength="16" required
-              autocomplete="current-password"></b-form-input>
+            <b-form-input
+              class="mb-3 r-input"
+              type="password"
+              v-model="password"
+              minlength="8"
+              maxlength="16"
+              required
+              autocomplete="current-password"
+            ></b-form-input>
             <div class="text-center mb-5">
-              <b-button variant="success" type="submit" class="mb-2 r-button w-50">Registrar</b-button>
-
+              <b-button
+                variant="success"
+                type="submit"
+                class="mb-2 r-button w-50"
+                >Registrar</b-button
+              >
             </div>
           </b-form>
         </b-container>
       </b-col>
       <b-col cols="6" class="p-0 d-none d-lg-block col-md-5 col-lg-5 col-xl-5">
-        <b-img class="r-image rounded-end-4 w-100 h-100"
+        <b-img
+          class="r-image rounded-end-4 w-100 h-100"
           src="https://cdn-3.expansion.mx/dims4/default/134c22d/2147483647/strip/true/crop/2204x1361+0+0/resize/1800x1112!/format/webp/quality/80/?url=https%3A%2F%2Fcdn-3.expansion.mx%2F73%2F44%2F67577a564d988ffb066a34ff425b%2Fistock-1297795284.jpg"
-          alt="imagen-registro"></b-img>
+          alt="imagen-registro"
+        ></b-img>
       </b-col>
     </b-row>
   </b-container>
@@ -29,7 +49,7 @@
 
 <script>
 import registerServices from "./services/Register";
-import CryptoJS from 'crypto-js';
+import CryptoJS from "crypto-js";
 
 export default {
   data() {
@@ -37,29 +57,34 @@ export default {
       show: true,
       email: null,
       password: null,
-    }
+      message: "",
+      showError: false,
+    };
   },
   methods: {
-    encrypt(dato) {
-      const clave = CryptoJS.enc.Utf8.parse('625C1EF65A21FDF6625C1EF65A21FDF6');
-      const cifrado = CryptoJS.AES.encrypt(dato, clave, {
+    encrypt(data) {
+      const key = CryptoJS.enc.Utf8.parse("625C1EF65A21FDF6625C1EF65A21FDF6");
+      const encrypted = CryptoJS.Blowfish.encrypt(data, key, {
         mode: CryptoJS.mode.ECB,
         padding: CryptoJS.pad.Pkcs7,
       });
-
-      return cifrado.toString();
-    },  
+      return encrypted.toString();
+    },
 
     async onRegister(event) {
       event.preventDefault();
       const emailRegex = /^(?=.*[@])(?=.*(gmail\.com))[\S]+$/;
 
       if (!this.email || !emailRegex.test(this.email)) {
-        console.error("Correo electrónico no válido. Solo se permiten Gmail");
+        this.showError = true;
+        this.message = "Correo electrónico no válido. Solo se permiten Gmail";
+        this.showMessage();
         return;
       }
 
       if (!this.password) {
+        this.showError = true;
+        this.message = "Contraseña no válida";
         return;
       }
       const sanitizedEmail = this.email.trim();
@@ -68,16 +93,36 @@ export default {
       const passwordSend = this.encrypt(sanitizedPassword);
 
       try {
-        const message = await registerServices.register(emailSend,passwordSend);
-        console.log(message);
+        const response = await registerServices.register(
+          emailSend,
+          passwordSend
+        );
+        console.log(response);
+        if (response) {
+          this.showError = true;
+          this.message = response.data.message;
+          this.showMessage();
+          this.onReset();
+        } else {
+          this.showError = true;
+          this.message = "Error al registrar, intente de nuevo";
+          this.showMessage();
+        }
       } catch (error) {
         console.error(error);
       }
-    }
-   
-  }
-
-}
+    },
+    onReset() {
+      this.email = null;
+      this.password = null;
+    },
+    showMessage() {
+      setTimeout(() => {
+        this.showError = false;
+      }, 3000);
+    },
+  },
+};
 </script>
 
 <style></style>
